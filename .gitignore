@@ -1,0 +1,24 @@
+# Clojure
+.cpcache/
+.clj-kondo/
+.lsp/
+
+# deps.edn artifacts
+target/
+classes/
+
+# Environment / secrets
+.env
+.env.local
+
+# Editor
+.DS_Store
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# REPL history
+.nrepl-port
+.nrepl-history
