@@ -1,7 +1,7 @@
 (ns spotify-analyzer.db
-  :require [next.jdbc :as jdbc]
-           [honey.sql :as sql]
-           [honey.sql.helpers :as h])
+  (:require [next.jdbc :as jdbc]
+            [honey.sql :as sql]
+            [honey.sql.helpers :as h]))
 
 (defn insert-play-events! [ds events]
   (let [rows (map (fn [e]
@@ -12,6 +12,8 @@
                      :popularity   (:popularity e)
                      :artist_id    (:artist-id e)
                      :artist_name  (:artist-name e)
+                     :album_id     (:album-id e)
+                     :album_name   (:album-name e)
                      :album_type   (:album-type e)
                      :album_tracks (:album-tracks e)
                      :release_date (:release-date e)
