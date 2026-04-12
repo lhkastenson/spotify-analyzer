@@ -10,6 +10,7 @@ classes/
 # Environment / secrets
 .env
 .env.local
+.dir-locals.el
 
 # Editor
 .DS_Store
@@ -22,3 +23,6 @@ classes/
 # REPL history
 .nrepl-port
 .nrepl-history
+
+#Claude
+CLAUDE.md
