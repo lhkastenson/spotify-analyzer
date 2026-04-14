@@ -27,3 +27,15 @@
                   (h/do-nothing)
                   (sql/format))]
     (jdbc/execute! ds query)))
+
+(defn get-cursor [ds]
+  (jdbc/execute-one! ds ["SELECT last_played_at FROM ingestion_cursor WHERE id= 1"]))
+
+(defn upsert-cursor! [ds last-played-at]
+  (let [query (-> (h/insert-into :ingestion_cursor)
+                  (h/values [{:id             1
+                              :last_played_at last-played-at}])
+                  (h/on-conflict :id)
+                  (h/do-update-set :last_played_at)
+                  (sql/format))]
+    (jdbc/execute! ds query)))

@@ -3,7 +3,9 @@
             [integrant.core :as ig]
             [next.jdbc :as jdbc]
             [migratus.core :as migratus]
-            [environ.core :refer [env]]))
+            [environ.core :refer [env]]
+            [spotify-analyzer.db :as db]
+            [spotify-analyzier.spotify :as spotify]))
 
 (defn ->jdbc-url [url]
   (when url
@@ -34,6 +36,16 @@
     (migratus/migrate cfg)
     (println "Migrations OK")
     cfg))
+
+(defn ingest! [ds]
+  (let [cursor    (db/get-cursor ds)
+        after     (:ingestion_cursor/last_played_at cursor)
+        token     (spotify/refresh-access-token)
+        events    (spotify/recently-played token (when after {:after (.getTime after)}))
+        sorted    (sort-by :played-at events)]
+    (when (seq sorted)
+      (db/insert-play-events! ds sorted)
+      (upsert-cursor! ds (:played-at (last sorted))))))
 
 (defn -main [& args]
   (let [system (ig/init config)]
