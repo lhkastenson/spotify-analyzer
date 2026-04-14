@@ -1,5 +1,6 @@
 (ns spotify-analyzer.db
   (:require [next.jdbc :as jdbc]
+            [next.jdbc.result-set :as rs]
             [honey.sql :as sql]
             [honey.sql.helpers :as h]))
 
@@ -27,6 +28,10 @@
                   (h/do-nothing)
                   (sql/format))]
     (jdbc/execute! ds query)))
+
+(defn get-play-events [ds]
+  (jdbc/execute! ds ["SELECT * FROM play_events"]
+                 {:builder-fn rs/as-unqualified-kebab-maps}))
 
 (defn get-cursor [ds]
   (jdbc/execute-one! ds ["SELECT last_played_at FROM ingestion_cursor WHERE id= 1"]))
