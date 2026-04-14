@@ -4,9 +4,11 @@
             [next.jdbc :as jdbc]
             [migratus.core :as migratus]
             [environ.core :refer [env]]
+            [tea-time.core :as tt]
             [spotify-analyzer.db :as db]
             [spotify-analyzer.spotify :as spotify]
-            [tea-time.core :as tt]))
+            [spotify-analyzer.patterns :as patterns]
+            [spotify-analyzer.report :as report]))
 
 (defn ->jdbc-url [url]
   (when url
@@ -18,6 +20,17 @@
   {::db        {}
    ::migrator  {:db (ig/ref ::db)}
    ::scheduler {:db (ig/ref ::db)}})
+
+(defn ingest! [ds]
+  (let [cursor    (db/get-cursor ds)
+        after     (:ingestion_cursor/last_played_at cursor)
+        token     (spotify/refresh-access-token)
+        events    (spotify/recently-played token (when after {:after (.getTime after)}))
+        sorted    (sort-by :played-at events)]
+    (when (seq sorted)
+      (db/insert-play-events! ds sorted)
+      (db/upsert-cursor! ds (:played-at (last sorted))))))
+
 
 (defmethod ig/init-key ::db [_ _]
   (println "Connecting to database...")
@@ -50,18 +63,17 @@
   (tt/stop!)
   (println "Scheduler stopped"))
 
-(defn ingest! [ds]
-  (let [cursor    (db/get-cursor ds)
-        after     (:ingestion_cursor/last_played_at cursor)
-        token     (spotify/refresh-access-token)
-        events    (spotify/recently-played token (when after {:after (.getTime after)}))
-        sorted    (sort-by :played-at events)]
-    (when (seq sorted)
-      (db/insert-play-events! ds sorted)
-      (db/upsert-cursor! ds (:played-at (last sorted))))))
-
 (defn -main [& args]
   (let [system (ig/init config)]
     (.addShutdownHook (Runtime/getRuntime)
                       (Thread. #(ig/halt! system)))
+    (ingest! (:spotify-analyzer.core/db system))
+    (let [ds       (:spotify-analyzer.core/db system)
+          events   (db/get-play-events ds)
+          sessions (patterns/cluster-sessions events)
+          scores   (patterns/frequency-score events)
+          binges   (patterns/detect-binges sessions)]
+      (report/print-report {:frequency-scores scores
+                            :binges           binges
+                            :since            nil}))
     (println "System started")))
