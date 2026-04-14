@@ -5,7 +5,8 @@
             [migratus.core :as migratus]
             [environ.core :refer [env]]
             [spotify-analyzer.db :as db]
-            [spotify-analyzer.spotify :as spotify]))
+            [spotify-analyzer.spotify :as spotify]
+            [tea-time.core :as tt]))
 
 (defn ->jdbc-url [url]
   (when url
@@ -14,12 +15,15 @@
       (not (str/includes? url "prepareThreshold")) (str "?prepareThreshold=0"))))
 
 (def config
-  {::db        {:jdbc-url (->jdbc-url (env :database-url))}
-   ::migrator  {:db (ig/ref ::db)}})
+  {::db        {}
+   ::migrator  {:db (ig/ref ::db)}
+   ::scheduler {:db (ig/ref ::db)}})
 
-(defmethod ig/init-key ::db [_ {:keys [jdbc-url]}]
+(defmethod ig/init-key ::db [_ _]
   (println "Connecting to database...")
-  (let [ds (jdbc/get-datasource jdbc-url)]
+  (let [jdbc-url (->jdbc-url (or (System/getProperty "database-url")
+                                  (System/getenv "DATABASE_URL")))
+        ds       (jdbc/get-datasource jdbc-url)]
     (jdbc/execute! ds ["SELECT 1"])
     (println "Database connection OK")
     ds))
@@ -36,6 +40,15 @@
     (migratus/migrate cfg)
     (println "Migrations OK")
     cfg))
+
+(defmethod ig/init-key ::scheduler [_ {:keys [db]}]
+  (tt/start!)
+  (tt/every! (* 60 60) #(ingest! db))
+  (println "Scheduler started"))
+
+(defmethod ig/halt-key! ::scheduler [_ _]
+  (tt/stop!)
+  (println "Scheduler stopped"))
 
 (defn ingest! [ds]
   (let [cursor    (db/get-cursor ds)
