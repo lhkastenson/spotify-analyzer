@@ -28,10 +28,12 @@
      :popularity   (:popularity track)
      :artist-id    (:id artist)
      :artist-name  (:name artist)
+     :album-id     (:id album)
      :album-name   (:name album)
      :album-type   (:album_type album)
+     :album-tracks (:total_tracks album)
      :release-date (:release_date album)
-     :played_at    (:played_at item)
+     :played-at    (-> (:played_at item) java.time.Instant/parse java.sql.Timestamp/from)
      :context-type (get-in item [:context :type])
      :context-uri  (get-in item [:context :uri])}))
 
