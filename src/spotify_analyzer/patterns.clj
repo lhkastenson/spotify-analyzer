@@ -7,7 +7,7 @@
               (let [track (first plays)]
                 {:track-id    (:track-id track)
                  :track-name  (:track-name track)
-                 :artist-name {:artist-name track}
+                 :artist-name (:artist-name track)
                  :play-count  (count plays)})))
        (sort-by :play-count >)))
 
@@ -34,10 +34,7 @@
                                          (> (count plays) 1)))))]
     (mapcat (fn [[_ plays]]
               (let [sorted (sort-by :track-number plays)]
-                (when (= (map :track-number sorted)
-                         (range (:track-number (first sorted))
-                                (inc (:track-number (last sorted)))))
-                  plays)))
+                (when (apply < (map :track-number sorted)) sorted)))
             album-groups)))
 
 (defn detect-binges [sessions]
