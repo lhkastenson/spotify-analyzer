@@ -25,3 +25,22 @@
                   (update sessions (dec (count sessions)) conj event))))
             []
             sorted)))
+
+(defn catalog-binge? [session]
+  (let [album-groups (->> session
+                          (group-by :album-id)
+                          (filter (fn [[album-id plays]]
+                                    (and album-id
+                                         (> (count plays) 1)))))]
+    (mapcat (fn [[_ plays]]
+              (let [sorted (sort-by :track-number plays)]
+                (when (= (map :track-number sorted)
+                         (range (:track-number (first sorted))
+                                (inc (:track-number (last sorted)))))
+                  plays)))
+            album-groups)))
+
+(defn detect-binges [sessions]
+  (->> sessions
+       (map catalog-binge?)
+       (filter seq)))
