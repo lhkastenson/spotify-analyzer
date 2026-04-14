@@ -29,9 +29,17 @@
                   (sql/format))]
     (jdbc/execute! ds query)))
 
-(defn get-play-events [ds]
-  (jdbc/execute! ds ["SELECT * FROM play_events"]
-                 {:builder-fn rs/as-unqualified-kebab-maps}))
+(defn get-play-events [ds & [{:keys [since until]}]]
+  (cond
+    (and since until)
+    (jdbc/execute! ds ["SELECT * FROM play_events WHERE played_at > ? AND played_at <= ?" since until]
+                   {:builder-fn rs/as-unqualified-kebab-maps})
+    since
+    (jdbc/execute! ds ["SELECT * FROM play_events WHERE played_at > ?" since]
+                   {:builder-fn rs/as-unqualified-kebab-maps})
+    :else
+    (jdbc/execute! ds ["SELECT * FROM play_events"]
+                   {:builder-fn rs/as-unqualified-kebab-maps})))
 
 (defn get-cursor [ds]
   (jdbc/execute-one! ds ["SELECT last_played_at FROM ingestion_cursor WHERE id= 1"]))

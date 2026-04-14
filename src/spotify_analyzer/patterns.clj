@@ -10,3 +10,18 @@
                  :artist-name {:artist-name track}
                  :play-count  (count plays)})))
        (sort-by :play-count >)))
+
+(defn cluster-sessions [events]
+  (let [sorted (sort-by :played-at events)]
+    (reduce (fn [sessions event]
+              (let [last-session (last sessions)
+                    last-play    (last last-session)
+                    gap          (when last-play
+                                   (- (.getTime (:played-at event))
+                                      (.getTime (:played-at last-play))))]
+                (if (or (nil? gap)
+                        (> gap (* 30 60 1000)))
+                  (conj sessions [event])
+                  (update sessions (dec (count sessions)) conj event))))
+            []
+            sorted)))
