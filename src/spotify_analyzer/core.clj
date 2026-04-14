@@ -5,7 +5,7 @@
             [migratus.core :as migratus]
             [environ.core :refer [env]]
             [spotify-analyzer.db :as db]
-            [spotify-analyzier.spotify :as spotify]))
+            [spotify-analyzer.spotify :as spotify]))
 
 (defn ->jdbc-url [url]
   (when url
@@ -45,7 +45,7 @@
         sorted    (sort-by :played-at events)]
     (when (seq sorted)
       (db/insert-play-events! ds sorted)
-      (upsert-cursor! ds (:played-at (last sorted))))))
+      (db/upsert-cursor! ds (:played-at (last sorted))))))
 
 (defn -main [& args]
   (let [system (ig/init config)]
