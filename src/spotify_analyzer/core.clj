@@ -68,12 +68,14 @@
     (.addShutdownHook (Runtime/getRuntime)
                       (Thread. #(ig/halt! system)))
     (ingest! (:spotify-analyzer.core/db system))
-    (let [ds       (:spotify-analyzer.core/db system)
-          events   (db/get-play-events ds)
-          sessions (patterns/cluster-sessions events)
-          scores   (patterns/frequency-score events)
-          binges   (patterns/detect-binges sessions)]
+    (let [ds            (:spotify-analyzer.core/db system)
+          events        (db/get-play-events ds)
+          sessions      (patterns/cluster-sessions events)
+          scores        (patterns/frequency-score events)
+          album-binges  (patterns/detect-album-binges sessions)
+          artist-binges (patterns/detect-artist-binges sessions)]
       (report/print-report {:frequency-scores scores
-                            :binges           binges
+                            :album-binges           album-binges
+                            :artist-binges    artist-binges
                             :since            nil}))
     (println "System started")))

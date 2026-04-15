@@ -37,7 +37,18 @@
                 (when (apply < (map :track-number sorted)) sorted)))
             album-groups)))
 
-(defn detect-binges [sessions]
+(defn detect-album-binges [sessions]
   (->> sessions
        (map catalog-binge?)
        (filter seq)))
+
+(defn artist-binge? [session]
+  (->> session
+       (partition-by :artist-id)
+       (filter (fn [run]
+                 (and (>= (count run) 3)
+                      (> (count (distinct (map :album-id run))) 1))))))
+
+(defn detect-artist-binges [sessions]
+  (->> sessions
+       (mapcat artist-binge?)))
